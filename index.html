@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backstage Pass</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg: #121212;
+    --bg-raised: #1b1a19;
+    --ink: #EDEAE0;
+    --ink-dim: #9a958a;
+    --gold: #D4A017;
+    --crimson: #8B1E3F;
+    --ok: #4f9d69;
+  }
+
+  *{ box-sizing: border-box; }
+
+  html, body{
+    margin:0; padding:0; min-height:100%;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #1e1c19 0%, var(--bg) 60%);
+    color: var(--ink);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .stage{
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 28px 18px 60px;
+  }
+
+  header{
+    text-align:center;
+    margin-bottom: 18px;
+  }
+
+  .eyebrow{
+    letter-spacing: .35em;
+    font-size: 11px;
+    color: var(--gold);
+    text-transform: uppercase;
+  }
+
+  h1{
+    font-family: 'Oswald', sans-serif;
+    font-weight: 700;
+    font-size: clamp(32px, 9vw, 52px);
+    letter-spacing: .02em;
+    text-transform: uppercase;
+    margin: 6px 0 4px;
+    color: var(--ink);
+    text-shadow: 0 0 18px rgba(212,160,23,0.25);
+  }
+
+  .sub{
+    color: var(--ink-dim);
+    font-size: 13px;
+  }
+
+  .progress{
+    display:flex;
+    justify-content:center;
+    gap: 6px;
+    margin: 18px 0 26px;
+  }
+  .dot{
+    width: 26px; height: 4px;
+    background: #333;
+    border-radius: 2px;
+  }
+  .dot.done{ background: var(--gold); }
+  .dot.active{ background: var(--crimson); }
+
+  .card{
+    background: var(--bg-raised);
+    border: 1px solid #2a2825;
+    border-radius: 4px;
+    padding: 26px 20px 30px;
+    position: relative;
+  }
+  .card::before{
+    content: "";
+    position:absolute; top:0; left:0; right:0; height:3px;
+    background: linear-gradient(90deg, var(--crimson), var(--gold));
+  }
+
+  .round-label{
+    font-family:'Oswald', sans-serif;
+    font-size: 12px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 10px;
+  }
+
+  .clue{
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--ink);
+    margin-bottom: 22px;
+    min-height: 44px;
+  }
+
+  .rig{
+    display:flex;
+    justify-content:center;
+    margin-bottom: 18px;
+  }
+
+  .word{
+    display:flex;
+    justify-content:center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 22px 0 20px;
+  }
+  .letter-box{
+    width: 34px; height: 42px;
+    border-bottom: 3px solid #444;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Oswald', sans-serif;
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--ink);
+    position: relative;
+    transition: border-color .2s ease, transform .2s ease;
+  }
+  .letter-box.filled{ border-color: var(--gold); }
+  .letter-box.key{ color: var(--crimson); }
+  .letter-box.key.filled{ border-color: var(--crimson); }
+  .letter-box.key::after{
+    content: attr(data-order);
+    position:absolute; top:-16px; left:50%; transform:translateX(-50%);
+    font-size: 9px; letter-spacing:.1em; color: var(--crimson);
+    font-family:'IBM Plex Mono', monospace;
+  }
+
+  .keyboard{
+    display:grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    margin-top: 6px;
+  }
+  .key{
+    background:#242220;
+    border: 1px solid #3a3630;
+    color: var(--ink);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 14px;
+    padding: 10px 0;
+    border-radius: 3px;
+    cursor:pointer;
+    transition: all .15s ease;
+  }
+  .key:active{ transform: scale(0.94); }
+  .key.correct{ background: var(--ok); border-color: var(--ok); color:#0d1a10; }
+  .key.wrong{ background: var(--crimson); border-color: var(--crimson); opacity:.55; }
+  .key:disabled{ cursor: default; }
+
+  .misses{
+    text-align:center;
+    font-size: 12px;
+    color: var(--ink-dim);
+    margin-top: 14px;
+    letter-spacing:.05em;
+  }
+  .misses span{ color: var(--crimson); }
+
+  .reveal-btn{
+    display:block;
+    margin: 16px auto 0;
+    background: none;
+    border: 1px solid #3a3630;
+    color: var(--ink-dim);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    padding: 8px 14px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  .final{
+    display:none;
+    margin-top: 28px;
+  }
+  .final.show{ display:block; }
+
+  .final-word{
+    text-align:center;
+    font-family:'Oswald', sans-serif;
+    font-size: 13px;
+    letter-spacing:.2em;
+    color: var(--ink-dim);
+    text-transform:uppercase;
+    margin-bottom: 6px;
+  }
+  .final-letters{
+    display:flex;
+    justify-content:center;
+    gap: 8px;
+    margin-bottom: 22px;
+  }
+  .final-letters .letter-box{
+    border-color: var(--gold);
+    color: var(--gold);
+    width: 30px; height: 38px; font-size:20px;
+  }
+
+  .ticket{
+    background: linear-gradient(135deg, #1c1a17, #14120f);
+    border: 1px dashed var(--gold);
+    border-radius: 8px;
+    padding: 22px 20px;
+    text-align:center;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: rise 1s ease forwards;
+    animation-delay: .3s;
+  }
+  @keyframes rise{ to{ opacity:1; transform:none; } }
+
+  .ticket .eyebrow{ margin-bottom: 8px; }
+  .ticket h2{
+    font-family:'Oswald', sans-serif;
+    font-size: 26px;
+    text-transform: uppercase;
+    margin: 0 0 6px;
+    color: var(--gold);
+  }
+  .ticket p{
+    color: var(--ink-dim);
+    font-size: 13px;
+    line-height:1.6;
+    margin: 0;
+  }
+  .ticket .route{
+    font-family:'Oswald', sans-serif;
+    font-size: 34px;
+    color: var(--ink);
+    margin: 14px 0;
+    letter-spacing: .05em;
+  }
+  .ticket .route span{ color: var(--gold); font-size: 18px; vertical-align: middle; padding: 0 10px;}
+</style>
+</head>
+<body>
+<div class="stage">
+  <header>
+    <h1>7 Runden</h1>
+    <div class="sub">Errate die Wörter. Die roten Buchstaben ergeben das Finale.</div>
+  </header>
+
+  <div class="progress" id="progress"></div>
+
+  <div class="card" id="gameCard">
+    <div class="round-label" id="roundLabel">Runde 1 / 7</div>
+    <div class="clue" id="clue"></div>
+
+    <svg class="rig" width="120" height="140" viewBox="0 0 120 140">
+      <line x1="20" y1="130" x2="100" y2="130" stroke="#3a3630" stroke-width="4" stroke-linecap="round"/>
+      <line x1="60" y1="130" x2="60" y2="20" stroke="#3a3630" stroke-width="4" stroke-linecap="round"/>
+      <line x1="60" y1="20" x2="60" y2="10" stroke="#3a3630" stroke-width="4"/>
+      <ellipse cx="60" cy="14" rx="10" ry="7" fill="none" stroke="#3a3630" stroke-width="3" id="mic"/>
+      <path id="cable" d="M 60 30 Q 90 40 60 60 Q 30 80 60 100 Q 90 115 60 128" fill="none" stroke="var(--crimson)" stroke-width="3" stroke-dasharray="140" stroke-dashoffset="140"/>
+    </svg>
+
+    <div class="word" id="wordBox"></div>
+
+    <div class="keyboard" id="keyboard"></div>
+
+    <div class="misses" id="misses"></div>
+
+    <button class="reveal-btn" id="revealBtn">Wort trotzdem aufdecken</button>
+  </div>
+
+  <div class="final" id="final">
+    <div class="final-word">Das Lösungswort lautet</div>
+    <div class="final-letters" id="finalLetters"></div>
+    <div class="ticket">
+  <div class="eyebrow">Alles Gute zum Geburtstag ❤️</div>
+  <h2>Boarding Pass</h2>
+  <div class="route">Du <span>✈️</span> Bari</div>
+
+  <img src="ryanair-ticket.jpg" alt="Ryanair Ticket" class="ticket-img">
+
+  <p>Pack den Koffer – dieses Rätsel war dein Ticket zur Überraschung.<br>Es geht wirklich nach Bari!</p>
+</div>
+  </div>
+</div>
+
+<script>
+const rounds = [
+  {
+    word: "FOHLENSCHAU",
+    clue: "1 · REITEN — Allererste Bewertungsveranstaltung für ein junges Pferd, bevor es Turnier- oder Zuchtlaufbahn beginnt.",
+    keyIndex: 0
+  },
+  {
+    word: "FLEDERMAUS",
+    clue: "2 · TIERE — Das einzige Säugetier, das aktiv fliegen kann.",
+    keyIndex: 1
+  },
+  {
+    word: "PIAFFE",
+    clue: "3 · REITEN — Hochversammelte Trabbewegung auf der Stelle, eine der schwierigsten Dressurlektionen.",
+    keyIndex: 1
+  },
+  {
+    word: "ELEKTRON",
+    clue: "4 · NATURWISSENSCHAFT — Negativ geladenes Elementarteilchen.",
+    keyIndex: 0
+  },
+  {
+    word: "KONTERGALOPP",
+    clue: "5 · REITEN — Galoppieren auf der dem Handwechsel entgegengesetzten, „falschen“ Hand.",
+    keyIndex: 6
+  },
+  {
+    word: "HEADBANGEN",
+    clue: "6 · MUSIK — Konzertbesucher, der wild mit dem Kopf zur Musik wippt.",
+    keyIndex: 1
+  },
+  {
+    word: "SPRINGREITEN",
+    clue: "7 · REITEN — Olympische Reitdisziplin, bei der Pferd und Reiter Hindernisse überwinden.",
+    keyIndex: 4
+  }
+];
+
+const MAX_MISSES = 6;
+let current = 0;
+let guessed = [];
+let misses = 0;
+let solvedKeyLetters = [];
+
+const progressEl = document.getElementById('progress');
+const roundLabel = document.getElementById('roundLabel');
+const clueEl = document.getElementById('clue');
+const wordBox = document.getElementById('wordBox');
+const keyboardEl = document.getElementById('keyboard');
+const missesEl = document.getElementById('misses');
+const cable = document.getElementById('cable');
+const revealBtn = document.getElementById('revealBtn');
+const gameCard = document.getElementById('gameCard');
+const finalEl = document.getElementById('final');
+const finalLetters = document.getElementById('finalLetters');
+
+function initProgress(){
+  progressEl.innerHTML = '';
+  rounds.forEach((_, i) => {
+    const d = document.createElement('div');
+    d.className = 'dot';
+    d.id = 'dot' + i;
+    progressEl.appendChild(d);
+  });
+}
+
+function startRound(i){
+  current = i;
+  guessed = [];
+  misses = 0;
+  cable.style.strokeDashoffset = 140;
+
+  document.querySelectorAll('.dot').forEach((d, idx) => {
+    d.classList.remove('active');
+    if(idx < i) d.classList.add('done');
+    if(idx === i) d.classList.add('active');
+  });
+
+  const r = rounds[i];
+  roundLabel.textContent = `Runde ${i+1} / ${rounds.length}`;
+  clueEl.textContent = r.clue;
+  missesEl.innerHTML = 'Fehlversuche: <span>0 / ' + MAX_MISSES + '</span>';
+  revealBtn.style.display = 'none';
+
+  renderWord();
+  renderKeyboard();
+}
+
+function renderWord(){
+  const r = rounds[current];
+  wordBox.innerHTML = '';
+  [...r.word].forEach((ch, idx) => {
+    const box = document.createElement('div');
+    box.className = 'letter-box';
+    if(idx === r.keyIndex) box.classList.add('key');
+    if(guessed.includes(ch)){
+      box.textContent = ch;
+      box.classList.add('filled');
+    }
+    wordBox.appendChild(box);
+  });
+}
+
+function renderKeyboard(){
+  keyboardEl.innerHTML = '';
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split('');
+  alphabet.forEach(letter => {
+    const btn = document.createElement('button');
+    btn.className = 'key';
+    btn.textContent = letter;
+    btn.addEventListener('click', () => handleGuess(letter, btn));
+    keyboardEl.appendChild(btn);
+  });
+}
+
+function handleGuess(letter, btn){
+  if(guessed.includes(letter)) return;
+  guessed.push(letter);
+  const r = rounds[current];
+  if(r.word.includes(letter)){
+    btn.classList.add('correct');
+    btn.disabled = true;
+    renderWord();
+    checkWin();
+  } else {
+    btn.classList.add('wrong');
+    btn.disabled = true;
+    misses++;
+    missesEl.innerHTML = 'Fehlversuche: <span>' + misses + ' / ' + MAX_MISSES + '</span>';
+    const offset = 140 - (140 * (misses / MAX_MISSES));
+    cable.style.strokeDashoffset = offset;
+    if(misses >= MAX_MISSES){
+      revealBtn.style.display = 'block';
+      disableKeyboard();
+    }
+  }
+}
+
+function disableKeyboard(){
+  document.querySelectorAll('.key').forEach(b => b.disabled = true);
+}
+
+function checkWin(){
+  const r = rounds[current];
+  const solved = [...r.word].every(ch => guessed.includes(ch));
+  if(solved){
+    solvedKeyLetters[current] = r.word[r.keyIndex];
+    disableKeyboard();
+    setTimeout(nextRound, 700);
+  }
+}
+
+revealBtn.addEventListener('click', () => {
+  const r = rounds[current];
+  solvedKeyLetters[current] = r.word[r.keyIndex];
+  guessed = [...new Set([...guessed, ...r.word.split('')])];
+  renderWord();
+  setTimeout(nextRound, 700);
+});
+
+function nextRound(){
+  if(current < rounds.length - 1){
+    startRound(current + 1);
+  } else {
+    document.getElementById('dot' + current).classList.add('done');
+    finishGame();
+  }
+}
+
+function finishGame(){
+  gameCard.style.display = 'none';
+  finalEl.classList.add('show');
+  finalLetters.innerHTML = '';
+  solvedKeyLetters.forEach(ch => {
+    const box = document.createElement('div');
+    box.className = 'letter-box filled';
+    box.textContent = ch;
+    finalLetters.appendChild(box);
+  });
+}
+
+initProgress();
+startRound(0);
+</script>
+</body>
+</html>
