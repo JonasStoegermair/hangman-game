@@ -211,6 +211,7 @@
   }
 
   .ticket{
+    overflow: hidden;
     background: linear-gradient(135deg, #1c1a17, #14120f);
     border: 1px dashed var(--gold);
     border-radius: 8px;
@@ -237,6 +238,18 @@
     line-height:1.6;
     margin: 0;
   }
+
+  .ticket-img{
+  width: 100%;
+  max-height: 320px;
+  height: auto;
+  display: block;
+  margin: 16px 0;
+  border-radius: 6px;
+  border: 1px solid #3a3630;
+  object-fit: contain;
+}
+
   .ticket .route{
     font-family:'Oswald', sans-serif;
     font-size: 34px;
